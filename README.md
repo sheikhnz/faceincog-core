@@ -16,13 +16,20 @@ Webcam → FaceDetector → LandmarkParser → MaskRegistry → OverlayRenderer 
 
 ## Quick Start
 
-### 1. Install dependencies
+### 1. Set up a virtual environment (recommended)
+
+```bash
+python -m venv venv
+source venv/bin/activate   # Linux / Mac
+```
+
+### 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Run (debug overlay)
+### 3. Run (debug overlay)
 
 ```bash
 python main.py
