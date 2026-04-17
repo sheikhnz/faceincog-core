@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Python virtual environment (never copy local venv into container)
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local AI models (init_container.py downloads them inside the container instead)
+# Uncomment ONLY if you want to COPY models instead of downloading at build time:
+# assets/models/*.onnx
+# assets/models/*.task
+
+# macOS artifacts
+.DS_Store
+**/.DS_Store
+
+# IDE configs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs and temp files
+*.log
+tmp/
+
+# InsightFace local cache (downloaded fresh inside container)
+# Note: container uses its own ~/.insightface; never copy local mac cache in.

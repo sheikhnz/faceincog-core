@@ -52,8 +52,21 @@ class InsightFaceMask(BaseMask):
         # 1. FaceAnalyzer (to extract features from target & webcam face)
         # 2. INSwapper (to actually run the pixel switch)
         
-        # Enable Apple Silicon Hardware Acceleration (CoreML)
-        providers = ["CoreMLExecutionProvider", "CPUExecutionProvider"]
+        # Dynamically pick the best execution provider available at runtime:
+        # - Cloud (RunPod/AWS): CUDAExecutionProvider  → full Nvidia 30+ FPS
+        # - Local Mac M-Series: CoreMLExecutionProvider → Apple Neural Engine
+        # - Fallback (any CPU):  CPUExecutionProvider
+        import onnxruntime as ort
+        available = ort.get_available_providers()
+        if "CUDAExecutionProvider" in available:
+            providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+            print("[FaceIncog] Using CUDA GPU acceleration 🚀")
+        elif "CoreMLExecutionProvider" in available:
+            providers = ["CoreMLExecutionProvider", "CPUExecutionProvider"]
+            print("[FaceIncog] Using Apple CoreML acceleration 🍎")
+        else:
+            providers = ["CPUExecutionProvider"]
+            print("[FaceIncog] Using CPU (no GPU acceleration detected)")
         
         self.app = insightface.app.FaceAnalysis(name='buffalo_l', providers=providers)
         self.app.prepare(ctx_id=0, det_size=(640, 640))
