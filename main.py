@@ -31,7 +31,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--draw",
         choices=[m.value for m in DrawMode],
-        default=DrawMode.MESH.value,
+        default=DrawMode.MASK_ONLY.value,
         help="Initial draw mode",
     )
     parser.add_argument("--mask", type=str, default=None, help="Mask name to activate on start")

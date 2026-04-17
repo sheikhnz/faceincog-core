@@ -33,7 +33,7 @@ class Config:
     refine_landmarks: bool = True   # Enables iris landmarks (468 → 478 points)
 
     # ── Rendering ──────────────────────────────────────────────────────────────
-    draw_mode: DrawMode = DrawMode.MESH
+    draw_mode: DrawMode = DrawMode.MASK_ONLY
     show_fps: bool = True
     window_title: str = "FaceIncog"
 
