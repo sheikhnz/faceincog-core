@@ -13,19 +13,18 @@ Draw modes (set in Config.draw_mode):
 from __future__ import annotations
 
 import cv2
-import mediapipe as mp
 import numpy as np
 
 from config import DrawMode
-from processing.parser import FaceData
 from masks.base import BaseMask
+from processing.parser import FaceData
 
 # Colour constants (BGR)
-_COLOUR_POINT = (0, 220, 120)      # Teal-green landmark dots
-_COLOUR_BBOX = (80, 180, 255)      # Orange bounding box
-_COLOUR_NOSE = (0, 100, 255)       # Red nose tip
-_COLOUR_EYE = (255, 180, 0)        # Cyan eye centres
-_COLOUR_MOUTH = (180, 80, 255)     # Purple mouth centre
+_COLOUR_POINT = (0, 220, 120)  # Teal-green landmark dots
+_COLOUR_BBOX = (80, 180, 255)  # Orange bounding box
+_COLOUR_NOSE = (0, 100, 255)  # Red nose tip
+_COLOUR_EYE = (255, 180, 0)  # Cyan eye centres
+_COLOUR_MOUTH = (180, 80, 255)  # Purple mouth centre
 _COLOUR_TEXT = (255, 255, 255)
 
 
@@ -72,8 +71,15 @@ class OverlayRenderer:
                 # Print the error to terminal so we can debug why the deepfake is failing
                 print(f"[FaceIncog] Mask error during apply: {e}")
                 # Mask errors must never crash the pipeline
-                cv2.putText(out, f"[mask error] {e}", (10, 90),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 1)
+                cv2.putText(
+                    out,
+                    f"[mask error] {e}",
+                    (10, 90),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.45,
+                    (0, 0, 255),
+                    1,
+                )
 
         # Debug overlay (skipped in MASK_ONLY mode)
         if self.draw_mode != DrawMode.MASK_ONLY:
@@ -123,12 +129,22 @@ class OverlayRenderer:
     def _draw_minimal(self, frame: np.ndarray, face: FaceData) -> None:
         """Draw only eye, nose, mouth landmark dots."""
         from processing.parser import (
-            _LEFT_EYE_INDICES, _RIGHT_EYE_INDICES, _NOSE_TIP_INDEX,
-            _MOUTH_UPPER_INDEX, _MOUTH_LOWER_INDEX,
+            _LEFT_EYE_INDICES,
+            _MOUTH_LOWER_INDEX,
+            _MOUTH_UPPER_INDEX,
+            _NOSE_TIP_INDEX,
+            _RIGHT_EYE_INDICES,
         )
-        interesting = set(_LEFT_EYE_INDICES + _RIGHT_EYE_INDICES + [
-            _NOSE_TIP_INDEX, _MOUTH_UPPER_INDEX, _MOUTH_LOWER_INDEX,
-        ])
+
+        interesting = set(
+            _LEFT_EYE_INDICES
+            + _RIGHT_EYE_INDICES
+            + [
+                _NOSE_TIP_INDEX,
+                _MOUTH_UPPER_INDEX,
+                _MOUTH_LOWER_INDEX,
+            ]
+        )
         for i in interesting:
             if i < len(face.landmarks):
                 pt = face.landmarks[i].astype(int)
@@ -155,7 +171,12 @@ class OverlayRenderer:
         for i, (k, v) in enumerate(face.expressions.items()):
             label = f"{k}: {v:.2f}"
             cv2.putText(
-                frame, label,
+                frame,
+                label,
                 (x, max(y - 10 - i * 18, 10)),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.42, _COLOUR_TEXT, 1, cv2.LINE_AA,
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.42,
+                _COLOUR_TEXT,
+                1,
+                cv2.LINE_AA,
             )

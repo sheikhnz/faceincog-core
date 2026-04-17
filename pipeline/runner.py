@@ -23,14 +23,13 @@ from __future__ import annotations
 import time
 
 import cv2
-import numpy as np
 
-from config import Config, DrawMode
 from capture.webcam import WebcamCapture
+from config import Config, DrawMode
+from masks.registry import MaskRegistry
 from processing.detector import FaceDetector
 from processing.parser import LandmarkParser
 from rendering.overlay import OverlayRenderer
-from masks.registry import MaskRegistry
 
 
 class PipelineRunner:
@@ -51,13 +50,20 @@ class PipelineRunner:
         cfg = self.config
 
         with (
-            WebcamCapture(cfg.device_index, cfg.frame_width, cfg.frame_height, cfg.target_fps) as cap,
-            FaceDetector(cfg.max_faces, cfg.min_detection_confidence,
-                         cfg.min_tracking_confidence, cfg.refine_landmarks) as detector,
+            WebcamCapture(
+                cfg.device_index, cfg.frame_width, cfg.frame_height, cfg.target_fps
+            ) as cap,
+            FaceDetector(
+                cfg.max_faces,
+                cfg.min_detection_confidence,
+                cfg.min_tracking_confidence,
+                cfg.refine_landmarks,
+            ) as detector,
         ):
             print(f"[Pipeline] Started: {cap}")
-            parser = LandmarkParser(cap.actual_width or cfg.frame_width,
-                                    cap.actual_height or cfg.frame_height)
+            parser = LandmarkParser(
+                cap.actual_width or cfg.frame_width, cap.actual_height or cfg.frame_height
+            )
             renderer = OverlayRenderer(draw_mode=cfg.draw_mode)
 
             # Activate the default mask if configured
@@ -70,7 +76,7 @@ class PipelineRunner:
             # Calculate waitKey delay for FPS cap
             wait_ms = max(1, int(1000 / cfg.target_fps) if cfg.target_fps > 0 else 1)
 
-            print(f"[Pipeline] Controls: q=quit  m=cycle-masks  d=cycle-draw-mode")
+            print("[Pipeline] Controls: q=quit  m=cycle-masks  d=cycle-draw-mode")
             print(f"[Pipeline] Active masks: {self.registry.list_available()}")
 
             try:
@@ -101,8 +107,16 @@ class PipelineRunner:
                         hud = f"{fps_est:.0f} fps  |  {latency_ms:.1f} ms"
                         active = self.registry._active_name or "none"
                         hud += f"  |  mask: {active}"
-                        cv2.putText(out, hud, (8, 22),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (200, 255, 100), 1, cv2.LINE_AA)
+                        cv2.putText(
+                            out,
+                            hud,
+                            (8, 22),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.55,
+                            (200, 255, 100),
+                            1,
+                            cv2.LINE_AA,
+                        )
                         if cfg.show_latency:
                             print(f"\r[Pipeline] {hud}", end="", flush=True)
 

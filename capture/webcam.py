@@ -12,8 +12,6 @@ Responsibilities:
 
 from __future__ import annotations
 
-from typing import Optional
-
 import cv2
 import numpy as np
 
@@ -39,7 +37,7 @@ class WebcamCapture:
         self.width = width
         self.height = height
         self.target_fps = target_fps
-        self._cap: Optional[cv2.VideoCapture] = None
+        self._cap: cv2.VideoCapture | None = None
 
     # ── Lifecycle ──────────────────────────────────────────────────────────────
 
@@ -63,7 +61,7 @@ class WebcamCapture:
             self._cap.release()
             self._cap = None
 
-    def __enter__(self) -> "WebcamCapture":
+    def __enter__(self) -> WebcamCapture:
         self.open()
         return self
 
@@ -72,7 +70,7 @@ class WebcamCapture:
 
     # ── Frame access ───────────────────────────────────────────────────────────
 
-    def read(self) -> Optional[np.ndarray]:
+    def read(self) -> np.ndarray | None:
         """
         Read the next frame from the webcam.
 

@@ -1,0 +1,27 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+exclude = [
+    ".git",
+    "__pycache__",
+    "venv",
+    ".venv",
+    "assets",
+    "masks",
+]
+
+[tool.ruff.lint]
+# E/W = pycodestyle, F = pyflakes, I = isort, UP = pyupgrade, B = flake8-bugbear
+select = ["E", "W", "F", "I", "UP", "B"]
+ignore = [
+    "E501",   # line-too-long (handled by formatter)
+    "B008",   # do not perform function calls in default arguments
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["config", "pipeline", "processing", "capture", "rendering"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

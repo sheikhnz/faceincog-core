@@ -9,11 +9,8 @@ from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
 from av import VideoFrame
 
 from config import Config, DrawMode
-from processing.detector import FaceDetector
-from processing.parser import LandmarkParser
-from rendering.overlay import OverlayRenderer
 from masks.registry import MaskRegistry
-
+from processing.detector import FaceDetector
 
 ROOT = os.path.dirname(__file__)
 
@@ -35,7 +32,7 @@ class FaceIncogTrack(VideoStreamTrack):
         self.detector = detector
         self.parser = None
         self.renderer = None
-        
+
         # A single-item queue to hold only the most recent frame
         self._queue = asyncio.Queue(maxsize=1)
         self._consume_task = asyncio.create_task(self._consume_track())
@@ -60,6 +57,7 @@ class FaceIncogTrack(VideoStreamTrack):
         if self.parser is None:
             from processing.parser import LandmarkParser
             from rendering.overlay import OverlayRenderer
+
             self.parser = LandmarkParser(img.shape[1], img.shape[0])
             self.renderer = OverlayRenderer(draw_mode=self.config.draw_mode)
 
@@ -91,7 +89,7 @@ class FaceIncogTrack(VideoStreamTrack):
 
 async def index(request):
     """Serves the frontend static HTML tester page."""
-    content = open(os.path.join(ROOT, "static", "index.html"), "r").read()
+    content = open(os.path.join(ROOT, "static", "index.html")).read()
     return web.Response(content_type="text/html", text=content)
 
 
@@ -120,9 +118,8 @@ async def offer(request):
                     request.app["registry"].activate(mask_name)
                 elif cmd.get("action") == "deactivate":
                     request.app["registry"].deactivate()
-            except Exception as e:
+            except Exception:
                 pass
-
 
     @pc.on("iceconnectionstatechange")
     async def on_iceconnectionstatechange():
@@ -141,7 +138,7 @@ async def offer(request):
                 track=track,
                 config=request.app["config"],
                 registry=request.app["registry"],
-                detector=request.app["detector"]
+                detector=request.app["detector"],
             )
             pc.addTrack(modified_track)
 
@@ -156,10 +153,7 @@ async def offer(request):
 
     return web.Response(
         content_type="application/json",
-        text=json.dumps({
-            "sdp": pc.localDescription.sdp,
-            "type": pc.localDescription.type
-        })
+        text=json.dumps({"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}),
     )
 
 
@@ -168,7 +162,7 @@ async def on_shutdown(app):
     coros = [pc.close() for pc in app["pcs"]]
     await asyncio.gather(*coros)
     app["pcs"].clear()
-    
+
     # Close detector safely
     if "detector" in app:
         app["detector"].close()
@@ -182,16 +176,20 @@ def prepare_faceincog(app, args):
         active_mask=args.mask,
         masks_dir=args.masks_dir,
     )
-    
+
     print("[FaceIncog] Loading Face Detector...")
-    detector = FaceDetector(config.max_faces, config.min_detection_confidence,
-                            config.min_tracking_confidence, config.refine_landmarks)
+    detector = FaceDetector(
+        config.max_faces,
+        config.min_detection_confidence,
+        config.min_tracking_confidence,
+        config.refine_landmarks,
+    )
     detector.open()
-    
+
     print(f"[FaceIncog] Loading Masks from {config.masks_dir}...")
     registry = MaskRegistry(masks_dir=config.masks_dir, smooth_alpha=config.mask_smooth_alpha)
     registry.load_all()
-    
+
     if config.active_mask:
         try:
             registry.activate(config.active_mask)
@@ -215,14 +213,14 @@ if __name__ == "__main__":
 
     app = web.Application()
     app["pcs"] = WeakSet()
-    
+
     # Routes
     app.router.add_get("/", index)
     app.router.add_post("/offer", offer)
-    
+
     # Init Pipeline Models
     prepare_faceincog(app, args)
-    
+
     app.on_shutdown.append(on_shutdown)
 
     print(f"Starting server on http://{args.host}:{args.port}")

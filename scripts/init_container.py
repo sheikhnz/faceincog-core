@@ -27,7 +27,7 @@ if not os.path.exists(inswapper_path):
     print("Downloading inswapper_128.onnx...")
     urllib.request.urlretrieve(
         "https://huggingface.co/ezioruan/inswapper_128.onnx/resolve/main/inswapper_128.onnx",
-        inswapper_path
+        inswapper_path,
     )
     print("✓ inswapper_128.onnx downloaded")
 else:
@@ -39,7 +39,7 @@ if not os.path.exists(landmarker_path):
     print("Downloading face_landmarker.task...")
     urllib.request.urlretrieve(
         "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-        landmarker_path
+        landmarker_path,
     )
     print("✓ face_landmarker.task downloaded")
 else:
@@ -51,6 +51,7 @@ else:
 # the container image so it never needs to re-download on boot.
 print("Initialising InsightFace buffalo_l (auto-downloads if needed)...")
 import insightface
+
 app = insightface.app.FaceAnalysis(name="buffalo_l")
 app.prepare(ctx_id=0, det_size=(640, 640))
 print("✓ buffalo_l models cached")

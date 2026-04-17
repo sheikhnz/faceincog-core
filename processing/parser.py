@@ -14,23 +14,74 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-
-import numpy as np
 from typing import Any
 
+import numpy as np
 
 # ── MediaPipe landmark indices (FaceMesh 468 / 478 with iris) ─────────────────
 # Reference: https://github.com/google/mediapipe/blob/master/mediapipe/modules/face_geometry/data/canonical_face_model_uv_visualization.png
 _LEFT_EYE_INDICES = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246]
-_RIGHT_EYE_INDICES = [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398]
+_RIGHT_EYE_INDICES = [
+    362,
+    382,
+    381,
+    380,
+    374,
+    373,
+    390,
+    249,
+    263,
+    466,
+    388,
+    387,
+    386,
+    385,
+    384,
+    398,
+]
 _NOSE_TIP_INDEX = 4
 _MOUTH_UPPER_INDEX = 13
 _MOUTH_LOWER_INDEX = 14
-_LEFT_EYE_CENTRE_INDEX = 468   # Iris centre (refine_landmarks=True), fallback to 33
+_LEFT_EYE_CENTRE_INDEX = 468  # Iris centre (refine_landmarks=True), fallback to 33
 _RIGHT_EYE_CENTRE_INDEX = 473  # Iris centre (refine_landmarks=True), fallback to 263
-_FACE_OVAL_INDICES = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288,
-                       397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136,
-                       172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109]
+_FACE_OVAL_INDICES = [
+    10,
+    338,
+    297,
+    332,
+    284,
+    251,
+    389,
+    356,
+    454,
+    323,
+    361,
+    288,
+    397,
+    365,
+    379,
+    378,
+    400,
+    377,
+    152,
+    148,
+    176,
+    149,
+    150,
+    136,
+    172,
+    58,
+    132,
+    93,
+    234,
+    127,
+    162,
+    21,
+    54,
+    103,
+    67,
+    109,
+]
 
 
 @dataclass
@@ -55,13 +106,14 @@ class FaceData:
     expressions : dict[str, float]
         Stub expression estimates in [0, 1].
     """
-    landmarks: np.ndarray                     # (N, 2) float32
-    nose_tip: np.ndarray                      # (2,)
-    left_eye: np.ndarray                      # (2,)
-    right_eye: np.ndarray                     # (2,)
-    mouth_left: np.ndarray                    # (2,)
-    mouth_right: np.ndarray                   # (2,)
-    face_rect: tuple[int, int, int, int]      # x, y, w, h
+
+    landmarks: np.ndarray  # (N, 2) float32
+    nose_tip: np.ndarray  # (2,)
+    left_eye: np.ndarray  # (2,)
+    right_eye: np.ndarray  # (2,)
+    mouth_left: np.ndarray  # (2,)
+    mouth_right: np.ndarray  # (2,)
+    face_rect: tuple[int, int, int, int]  # x, y, w, h
     expressions: dict[str, float] = field(default_factory=dict)
 
     @property
@@ -116,16 +168,16 @@ class LandmarkParser:
 
         # Key points — robust average over the eye sockets to handle missing iris data safely
         nose_tip = pts[_NOSE_TIP_INDEX]
-        
+
         left_eye_pts = pts[[33, 133, 159, 145]]
         right_eye_pts = pts[[362, 263, 386, 374]]
-        
+
         left_eye = np.mean(left_eye_pts, axis=0)
         right_eye = np.mean(right_eye_pts, axis=0)
-        
+
         upper_lip = pts[_MOUTH_UPPER_INDEX]
         lower_lip = pts[_MOUTH_LOWER_INDEX]
-        
+
         # Exact mouth corners used by InsightFace
         mouth_left = pts[61]
         mouth_right = pts[291]

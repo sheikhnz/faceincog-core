@@ -35,7 +35,9 @@ def parse_args() -> argparse.Namespace:
         help="Initial draw mode",
     )
     parser.add_argument("--mask", type=str, default=None, help="Mask name to activate on start")
-    parser.add_argument("--masks-dir", type=str, default="assets/masks", help="Path to masks directory")
+    parser.add_argument(
+        "--masks-dir", type=str, default="assets/masks", help="Path to masks directory"
+    )
     parser.add_argument("--no-latency", action="store_true", help="Suppress latency console output")
     return parser.parse_args()
 

@@ -11,13 +11,11 @@ Responsibilities:
 
 from __future__ import annotations
 
-from typing import Optional
-
 import cv2
 import mediapipe as mp
+import numpy as np
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
-import numpy as np
 
 
 class FaceDetector:
@@ -42,7 +40,7 @@ class FaceDetector:
         self.min_detection_confidence = min_detection_confidence
         self.min_tracking_confidence = min_tracking_confidence
         self.refine_landmarks = refine_landmarks
-        self._landmarker: Optional[vision.FaceLandmarker] = None
+        self._landmarker: vision.FaceLandmarker | None = None
         self._model_path = "assets/models/face_landmarker.task"
 
     # ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -63,7 +61,7 @@ class FaceDetector:
             self._landmarker.close()
             self._landmarker = None
 
-    def __enter__(self) -> "FaceDetector":
+    def __enter__(self) -> FaceDetector:
         self.open()
         return self
 
@@ -93,11 +91,11 @@ class FaceDetector:
 
         # MediaPipe expects RGB
         rgb = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB)
-        
+
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
         result = self._landmarker.detect(mp_image)
 
         if not result.face_landmarks:
             return []
-        
+
         return result.face_landmarks
