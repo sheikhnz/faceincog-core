@@ -124,9 +124,11 @@ class LandmarkParser:
 
         # Bounding box from face oval
         oval_pts = pts[_FACE_OVAL_INDICES]
-        x0, y0 = oval_pts.min(axis=0).astype(int)
-        x1, y1 = oval_pts.max(axis=0).astype(int)
-        face_rect = (int(x0), int(y0), int(x1 - x0), int(y1 - y0))
+        min_xy = oval_pts.min(axis=0)
+        max_xy = oval_pts.max(axis=0)
+        x0, y0 = int(min_xy[0]), int(min_xy[1])
+        x1, y1 = int(max_xy[0]), int(max_xy[1])
+        face_rect = (x0, y0, x1 - x0, y1 - y0)
 
         # Stub expressions
         expressions = self._estimate_expressions(pts, upper_lip, lower_lip, left_eye, right_eye)
@@ -167,6 +169,6 @@ class LandmarkParser:
         )
 
         return {
-            "mouth_open": round(mouth_open, 3),
-            "brow_raise": round(brow_raise, 3),
+            "mouth_open": round(float(mouth_open), 3),
+            "brow_raise": round(float(brow_raise), 3),
         }

@@ -11,10 +11,11 @@ Responsibilities:
 
 from __future__ import annotations
 
+from typing import Optional
+
 import cv2
 import mediapipe as mp
 import numpy as np
-from mediapipe.framework.formats.landmark_pb2 import NormalizedLandmarkList
 
 
 class FaceDetector:
@@ -39,18 +40,19 @@ class FaceDetector:
         self.min_detection_confidence = min_detection_confidence
         self.min_tracking_confidence = min_tracking_confidence
         self.refine_landmarks = refine_landmarks
-        self._face_mesh: mp.solutions.face_mesh.FaceMesh | None = None
+        self._face_mesh: Optional[mp.solutions.face_mesh.FaceMesh] = None  # type: ignore[name-defined]
 
     # ── Lifecycle ──────────────────────────────────────────────────────────────
 
     def open(self) -> None:
-        self._face_mesh = mp.solutions.face_mesh.FaceMesh(
+        face_mesh = mp.solutions.face_mesh.FaceMesh(
             static_image_mode=False,          # Tracking mode — faster after first detection
             max_num_faces=self.max_faces,
             refine_landmarks=self.refine_landmarks,
             min_detection_confidence=self.min_detection_confidence,
             min_tracking_confidence=self.min_tracking_confidence,
         )
+        self._face_mesh = face_mesh
 
     def close(self) -> None:
         if self._face_mesh is not None:
@@ -66,7 +68,7 @@ class FaceDetector:
 
     # ── Detection ──────────────────────────────────────────────────────────────
 
-    def detect(self, bgr_frame: np.ndarray) -> list[NormalizedLandmarkList]:
+    def detect(self, bgr_frame: np.ndarray) -> list:
         """
         Run face mesh detection on a BGR frame from OpenCV.
 
@@ -84,6 +86,7 @@ class FaceDetector:
         """
         if self._face_mesh is None:
             raise RuntimeError("FaceDetector is not open. Call open() or use as context manager.")
+        assert self._face_mesh is not None
 
         # MediaPipe expects RGB
         rgb = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB)

@@ -1,0 +1,11 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "include": ["."],
+  "typeCheckingMode": "basic",
+  "reportMissingModuleSource": "none",
+  "reportUnknownMemberType": "none",
+  "reportUnknownVariableType": "none",
+  "reportUnknownArgumentType": "none"
+}

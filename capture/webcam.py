@@ -12,6 +12,8 @@ Responsibilities:
 
 from __future__ import annotations
 
+from typing import Optional
+
 import cv2
 import numpy as np
 
@@ -37,22 +39,23 @@ class WebcamCapture:
         self.width = width
         self.height = height
         self.target_fps = target_fps
-        self._cap: cv2.VideoCapture | None = None
+        self._cap: Optional[cv2.VideoCapture] = None
 
     # ── Lifecycle ──────────────────────────────────────────────────────────────
 
     def open(self) -> None:
         """Open the capture device. Raises RuntimeError if it fails."""
-        self._cap = cv2.VideoCapture(self.device_index)
-        if not self._cap.isOpened():
+        cap = cv2.VideoCapture(self.device_index)
+        if not cap.isOpened():
             raise RuntimeError(
                 f"Cannot open webcam at device index {self.device_index}. "
                 "Check that no other process is using it and the index is correct."
             )
-        self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
-        self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
         if self.target_fps > 0:
-            self._cap.set(cv2.CAP_PROP_FPS, self.target_fps)
+            cap.set(cv2.CAP_PROP_FPS, self.target_fps)
+        self._cap = cap
 
     def close(self) -> None:
         """Release the capture device."""
@@ -69,7 +72,7 @@ class WebcamCapture:
 
     # ── Frame access ───────────────────────────────────────────────────────────
 
-    def read(self) -> np.ndarray | None:
+    def read(self) -> Optional[np.ndarray]:
         """
         Read the next frame from the webcam.
 
@@ -83,6 +86,7 @@ class WebcamCapture:
         """
         if self._cap is None:
             raise RuntimeError("WebcamCapture is not open. Call open() or use as context manager.")
+        assert self._cap is not None
         ret, frame = self._cap.read()
         return frame if ret else None
 
@@ -93,18 +97,21 @@ class WebcamCapture:
         """FPS reported by the driver (may differ from requested)."""
         if self._cap is None:
             return 0.0
-        return self._cap.get(cv2.CAP_PROP_FPS)
+        assert self._cap is not None
+        return float(self._cap.get(cv2.CAP_PROP_FPS))
 
     @property
     def actual_width(self) -> int:
         if self._cap is None:
             return 0
+        assert self._cap is not None
         return int(self._cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
     @property
     def actual_height(self) -> int:
         if self._cap is None:
             return 0
+        assert self._cap is not None
         return int(self._cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     def __repr__(self) -> str:
