@@ -35,6 +35,26 @@ class FaceIncogTrack(VideoStreamTrack):
         self.detector = detector
         self.parser = None
         self.renderer = None
+        
+        # A single-item queue to hold only the most recent frame
+        self._queue = asyncio.Queue(maxsize=1)
+        self._consume_task = asyncio.create_task(self._consume_track())
+
+    async def _consume_track(self):
+        """Continuously pulls frames from the browser and drops old ones."""
+        while True:
+            try:
+                frame = await self.track.recv()
+                # Empty out any existing unmodified frame to keep only the absolute latest
+                while not self._queue.empty():
+                    try:
+                        self._queue.get_nowait()
+                    except asyncio.QueueEmpty:
+                        break
+                self._queue.put_nowait(frame)
+            except Exception as e:
+                print(f"[FaceIncogTrack] Consume track stopped: {e}")
+                break
 
     def process_frame(self, img):
         if self.parser is None:
@@ -50,18 +70,15 @@ class FaceIncogTrack(VideoStreamTrack):
         return out
 
     async def recv(self):
-        # Retrieve incoming frame from the browser
-        frame = await self.track.recv()
+        # Await the absolute latest frame from our queue (dropping all intermediaries)
+        frame = await self._queue.get()
 
         try:
-            # Convert to OpenCV compatible BGR numpy array
             img = frame.to_ndarray(format="bgr24")
 
-            # Offload heavy AI processing to a separate thread 
-            # so we don't freeze the aiortc event loop
+            # Offload heavy AI processing
             out = await asyncio.to_thread(self.process_frame, img)
 
-            # Re-encode frame for WebRTC transmission
             new_frame = VideoFrame.from_ndarray(out, format="bgr24")
             new_frame.pts = frame.pts
             new_frame.time_base = frame.time_base
@@ -69,7 +86,6 @@ class FaceIncogTrack(VideoStreamTrack):
 
         except Exception as e:
             print(f"[FaceIncogTrack] Error processing frame: {e}")
-            # If it fails, just return the exact same frame we got so it doesn't freeze
             return frame
 
 
