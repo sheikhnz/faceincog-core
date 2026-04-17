@@ -1,5 +1,8 @@
 import os
 import urllib.request
+import ssl
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 def download_file(url, dest):
     print(f"Downloading {url} to {dest}...")

@@ -17,3 +17,8 @@ huggingface_hub>=0.16.0
 
 # Optional: custom ML model integration
 # torch>=2.2.0
+
+# WebRTC SaaS Networking
+aiohttp>=3.8.0
+aiortc>=0.9.0
+av>=10.0.0

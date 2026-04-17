@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FaceIncog - WebRTC PoC</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1e1e1e;
+            color: #efefef;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 { margin-bottom: 5px; }
+        .controls {
+            margin: 20px 0;
+            padding: 15px;
+            background: #2d2d2d;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        button:hover { background: #0055aa; }
+        button:disabled { background: #555; cursor: not-allowed; }
+        
+        .video-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 1400px;
+        }
+        .video-box {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            flex: 1;
+            min-width: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+        .video-title {
+            padding: 10px;
+            background: #333;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            border-bottom: 2px solid #444;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>FaceIncog Deepfake Cloud</h1>
+    <p>Simulating the Chrome Extension WebRTC interception.</p>
+
+    <div class="controls">
+        <button id="start" onclick="start()">Start Camera & Connect to Cloud</button>
+        <button id="stop" onclick="stop()" style="display: none; background: #cc0000;">Stop</button>
+    </div>
+
+    <div class="video-container">
+        <div class="video-box">
+            <div class="video-title">Local Webcam (Pre-Upload)</div>
+            <video id="video-in" autoplay playsinline muted></video>
+        </div>
+        <div class="video-box">
+            <div class="video-title">Cloud Output (Deepfaked via Python)</div>
+            <video id="video-out" autoplay playsinline></video>
+        </div>
+    </div>
+
+    <script>
+        var pc = null;
+        var datachannel = null;
+
+        function negotiate() {
+            pc.addTransceiver('video', {direction: 'recvonly'});
+            return pc.createOffer().then(function(offer) {
+                return pc.setLocalDescription(offer);
+            }).then(function() {
+                // wait for ICE gathering to complete
+                return new Promise(function(resolve) {
+                    if (pc.iceGatheringState === 'complete') {
+                        resolve();
+                    } else {
+                        function checkState() {
+                            if (pc.iceGatheringState === 'complete') {
+                                pc.removeEventListener('icegatheringstatechange', checkState);
+                                resolve();
+                            }
+                        }
+                        pc.addEventListener('icegatheringstatechange', checkState);
+                    }
+                });
+            }).then(function() {
+                var offer = pc.localDescription;
+                return fetch('/offer', {
+                    body: JSON.stringify({
+                        sdp: offer.sdp,
+                        type: offer.type,
+                    }),
+                    headers: {'Content-Type': 'application/json'},
+                    method: 'POST'
+                });
+            }).then(function(response) {
+                return response.json();
+            }).then(function(answer) {
+                return pc.setRemoteDescription(answer);
+            }).catch(function(e) {
+                alert(e);
+            });
+        }
+
+        function start() {
+            document.getElementById('start').style.display = 'none';
+            document.getElementById('stop').style.display = 'block';
+
+            pc = new RTCPeerConnection();
+            
+            // Build Datachannel to send commands (like mask changes)
+            datachannel = pc.createDataChannel('control');
+
+            pc.addEventListener('track', function(evt) {
+                if (evt.track.kind == 'video') {
+                    document.getElementById('video-out').srcObject = evt.streams[0];
+                }
+            });
+
+            var constraints = {
+                audio: false,
+                video: { width: 640, height: 480 } // Optimize for the Python backend
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+                document.getElementById('video-in').srcObject = stream;
+                stream.getTracks().forEach(function(track) {
+                    pc.addTrack(track, stream);
+                });
+                return negotiate();
+            }).catch(function(err) {
+                alert('Could not acquire media: ' + err);
+            });
+        }
+
+        function stop() {
+            document.getElementById('stop').style.display = 'none';
+            document.getElementById('start').style.display = 'block';
+
+            setTimeout(function() {
+                pc.close();
+            }, 500);
+        }
+    </script>
+</body>
+</html>
