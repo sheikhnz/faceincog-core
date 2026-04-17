@@ -1,0 +1,6 @@
+{
+  "type": "insightface",
+  "name": "Demo Deepfake",
+  "description": "AI face swap that replaces your face with target.jpg",
+  "target_image": "target.jpg"
+}

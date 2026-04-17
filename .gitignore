@@ -21,3 +21,8 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Deepfake Models
+assets/models/*.onnx
+assets/models/*.zip
+assets/models/*.bin

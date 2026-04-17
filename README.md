@@ -1,15 +1,15 @@
 # FaceIncog Core
 
-> Real-time face tracking and mask rendering engine — Python · MediaPipe · OpenCV
+> Real-time AI Face-Swapping (Deepfake) Engine - Python · InsightFace · ONNX
 
 ---
 
 ## Overview
 
-FaceIncog Core captures a webcam stream, detects 468+ facial landmarks with MediaPipe FaceMesh, and applies a real-time visual mask (2D overlay, blendshape rig, or pixel filter) — all in a single synchronous pipeline at ~30 fps on CPU.
+FaceIncog Core captures a webcam stream and applies a real-time Generative AI face swap using the `insightface` neural network pipeline (`inswapper_128`). The architecture extracts a 512-dimensional identity embedding from a target photo, automatically tracks your face in the webcam using the `buffalo_l` analyzer, and hallucinate your facial features to mimic the target identity — while preserving your original hair, lighting, and expressions.
 
 ```
-Webcam → FaceDetector → LandmarkParser → MaskRegistry → OverlayRenderer → Display
+Webcam → InsightFace (buffalo_l) → Feature Embedded target.jpg → INSwapper → Display
 ```
 
 ---
@@ -29,19 +29,23 @@ source venv/bin/activate   # Linux / Mac
 pip install -r requirements.txt
 ```
 
-### 3. Run (debug overlay)
+### 3. Download the Required ONNX Model
+
+The generative face swapper requires the `inswapper_128.onnx` weight file. Before running the pipeline, execute the downloader script to fetch the model from HuggingFace:
 
 ```bash
-python main.py
+python scripts/download_models.py
 ```
 
-### 3. Run with a mask
+### 4. Run the Deepfake Mask
 
 ```bash
-python main.py --mask demo_overlay
+python main.py --mask demo_deepfake
 ```
 
-### 4. Full options
+*(Note: AI Generative swapping is extremely heavy. Use the `d` hotkey to turn off the debug mesh and see the raw generated face!).*
+
+### 5. Full options
 
 ```
 python main.py --help
@@ -73,22 +77,21 @@ faceincog-core/
 ├── capture/
 │   └── webcam.py             # WebcamCapture — cv2.VideoCapture wrapper
 ├── processing/
-│   ├── detector.py           # FaceDetector — MediaPipe FaceMesh
+│   ├── detector.py           # FaceDetector — MediaPipe FaceMesh (for UI Mesh)
 │   └── parser.py             # LandmarkParser → FaceData
 ├── masks/
 │   ├── base.py               # BaseMask — abstract interface
-│   ├── aligner.py            # MaskAligner — affine warp + EMA smoothing
-│   ├── overlay_mask.py       # Overlay2DMask — PNG/WebP texture
-│   ├── blendshape_mask.py    # BlendshapeMask — GLTF/GLB stub
-│   ├── filter_mask.py        # FilterMask — pixel effects
+│   ├── insightface_mask.py   # InsightFaceMask — inswapper generator
 │   ├── loader.py             # MaskLoader — loads by mask.json type
 │   └── registry.py           # MaskRegistry — runtime catalogue & hot-swap
 ├── rendering/
 │   └── overlay.py            # OverlayRenderer — debug + mask compositor
 ├── pipeline/
 │   └── runner.py             # PipelineRunner — main frame loop
+├── scripts/
+│   └── download_models.py    # Downloads the massive ONNX generator weights
 ├── assets/masks/             # Mask asset directories
-│   ├── demo_overlay/         # Bundled 2D overlay demo mask
+│   ├── demo_deepfake/        # Bundled Deepfake demonstration
 │   └── README.md
 ├── config.py                 # Runtime configuration dataclass
 ├── main.py                   # Entry point (argparse CLI)
@@ -97,98 +100,54 @@ faceincog-core/
 
 ---
 
-## Adding a Custom Mask
+## Adding a Custom Target Face
 
-1. Create a directory under `assets/masks/your_mask_name/`
-2. Add `mask.json` with the appropriate type descriptor (see `assets/masks/README.md`)
-3. Add your asset files (texture, model, etc.)
-4. Run: `python main.py --mask your_mask_name`
+1. Create a directory under `assets/masks/your_deepfake/`
+2. Add `mask.json` with the following format:
+```json
+{
+  "type": "insightface",
+  "target_image": "my_friend.jpg"
+}
+```
+3. Drop a clear, forward-facing photo of the target into the folder alongside the JSON.
+4. Run: `python main.py --mask your_deepfake`
 
-The mask will auto-load and activate without any code changes.
+The system will automatically extract their facial embedding and swap it onto your webcam frame.
 
 ---
 
 ## Architecture
 
-### Data flow (per frame)
-
-```
-WebcamCapture.read()
-  └─ BGR frame (np.ndarray)
-       └─ FaceDetector.detect()
-            └─ list[NormalizedLandmarkList]  (MediaPipe)
-                 └─ LandmarkParser.parse_all()
-                      └─ list[FaceData]
-                           ├─ BaseMask.apply()     ← active mask
-                           └─ OverlayRenderer.draw()
-                                └─ composited frame → cv2.imshow()
-```
-
 ### Key design decisions
 
 | Decision                  | Rationale                                                            |
 | ------------------------- | -------------------------------------------------------------------- |
-| Single-threaded loop      | Simplest baseline; MediaPipe tracking mode is fast enough at 640×480 |
-| `static_image_mode=False` | Enables temporal tracking — faster than per-frame detection          |
-| EMA on affine matrix      | Suppresses landmark jitter without smoothing lag                     |
-| `BaseMask` interface      | Makes renderer completely mask-agnostic; masks are hot-swappable     |
-| `mask.json` descriptor    | Assets are self-describing; no code needed to add new masks          |
+| InsightFace & Inswapper   | Generates realistic facial feature replacement matching head pivots  |
+| Decoupled BaseMask        | Makes renderer completely mask-agnostic                              |
+| `mask.json` descriptor    | Assets are self-describing; no code needed to add new targets        |
 
 ---
 
 ## Performance Considerations
 
-| Factor              | Impact                      | Mitigation                                |
-| ------------------- | --------------------------- | ----------------------------------------- |
-| Resolution          | Higher → more landmark data | Default 640×480 is the sweet spot         |
-| Affine warp         | O(pixels) via native C++    | Negligible at 640×480                     |
-| Alpha blend         | Vectorised float32 numpy    | Texture converted to float32 once at load |
-| MediaPipe threading | Runs single-threaded        | Keep `max_faces=1` unless needed          |
-| Mask switch         | One-frame delay             | No lock needed in single-threaded model   |
+| Factor                 | Impact                      | Mitigation                                |
+| ---------------------- | --------------------------- | ----------------------------------------- |
+| Resolution             | Higher → heavier inference  | Default 640×480 is the sweet spot         |
+| Execution Provider     | CPU vs GPU                  | Use `onnxruntime-gpu` for playable FPS    |
 
-Typical performance on a modern CPU: **25–35 fps** at 640×480 with MESH draw mode + 2D overlay mask.
-
----
-
-## Extending the Pipeline
-
-### Add async capture (reduce I/O blocking)
-
-Add a `threading.Thread` producer that fills a `queue.Queue(maxsize=1)` — the main loop reads from the queue instead of calling `cap.read()` directly.
-
-### Add virtual camera output (OBS)
-
-```bash
-pip install pyvirtualcam
-# Linux: sudo modprobe v4l2loopback
-```
-
-Add after `cv2.imshow()`:
-
-```python
-import pyvirtualcam
-with pyvirtualcam.Camera(width=640, height=480, fps=30) as vcam:
-    vcam.send(cv2.cvtColor(out, cv2.COLOR_BGR2RGB))
-```
-
-### Add 3D blendshape rendering
-
-Replace the stub in `BlendshapeMask.apply()` with a `pyrender` / `trimesh` offscreen render pass.
-
-### Add custom ML model
-
-Add a new module under `processing/` that accepts a `FaceData` and returns enriched data. Hot-swap it into the pipeline loop in `runner.py`.
+Typical performance on a modern CPU without CUDA acceleration is generally **1-3 fps** due to the heavy generative neural steps. For 30 FPS, install `onnxruntime-gpu` with an NVIDIA card or utilize TensorRT execution providers.
 
 ---
 
 ## Dependencies
 
-| Package         | Version      | Purpose                               |
-| --------------- | ------------ | ------------------------------------- |
-| `opencv-python` | ≥4.9         | Capture, frame ops, drawing           |
-| `mediapipe`     | ≥0.10        | FaceMesh landmark detection           |
-| `numpy`         | ≥1.26        | Array math                            |
-| `Pillow`        | ≥10.2        | RGBA texture loading                  |
-| `pygltflib`     | _(optional)_ | GLTF/GLB parsing for blendshape masks |
-| `pyvirtualcam`  | _(optional)_ | OBS virtual camera output             |
-| `torch`         | _(optional)_ | Custom ML model integration           |
+| Package            | Version      | Purpose                               |
+| ------------------ | ------------ | ------------------------------------- |
+| `opencv-python`    | ≥4.9         | Capture, frame ops, drawing           |
+| `insightface`      | ≥0.7.3       | Generative face swapping and analysis |
+| `onnxruntime`      | ≥1.15        | Execution backend for inswapper       |
+| `onnx`             | ≥1.14        | Neural model format                   |
+| `huggingface_hub`  | ≥0.16        | Script model downloads                |
+| `mediapipe`        | ≥0.10        | Debug wireframes and tracking         |
+| `numpy`            | ≥1.26        | Array math                            |

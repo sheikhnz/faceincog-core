@@ -6,11 +6,11 @@ opencv-python>=4.9.0
 mediapipe>=0.10.0
 numpy>=1.26.0
 
-# Mask system (2D overlays)
-Pillow>=10.2.0
-
-# Optional: 3D blendshape mask stub (GLTF/GLB parsing)
-# pygltflib>=1.16.0
+# Deepfake Mask Engine
+insightface>=0.7.3
+onnxruntime>=1.15.0
+onnx>=1.14.0
+huggingface_hub>=0.16.0
 
 # Optional: virtual camera output (requires v4l2loopback on Linux)
 # pyvirtualcam>=0.10.0
