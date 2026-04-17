@@ -32,6 +32,7 @@ Correct pipeline:
 
 from __future__ import annotations
 
+import math
 import numpy as np
 import cv2
 
@@ -73,20 +74,39 @@ class MaskAligner:
             (2, 3) float32 affine matrix suitable for cv2.warpAffine.
             Maps mask texture coordinates → frame pixel coordinates.
         """
-        face_anchors = np.array(
-            [face_data.left_eye, face_data.right_eye, face_data.nose_tip],
-            dtype=np.float32,
-        )
+        # 1. Scale computed via reliable landmarks (Eye distance ensures aspect ratio stability)
+        face_eye_dist = face_data.eye_distance
+        mask_eye_dist = float(np.linalg.norm(self.mask_anchors[1] - self.mask_anchors[0]))
+        scale = face_eye_dist / max(mask_eye_dist, 1e-6)
 
-        # Step 1: face-space → mask-space
-        #   src = face anchor positions (pixel coords in the frame)
-        #   dst = mask anchor positions (pixel coords in the texture)
-        M_fwd = cv2.getAffineTransform(face_anchors, self.mask_anchors)  # (2, 3)
+        # 2. Rotation calculated using the angle of the eye landmarks
+        # Subject's eyes in the camera frame
+        delta_y = face_data.right_eye[1] - face_data.left_eye[1]
+        delta_x = face_data.right_eye[0] - face_data.left_eye[0]
+        face_angle_deg = math.degrees(math.atan2(delta_y, delta_x))
 
-        # Step 2: invert so warpAffine can map frame pixels → texture texels
-        M = cv2.invertAffineTransform(M_fwd)  # (2, 3)
+        # Mask eyes in texture frame
+        mask_delta_y = self.mask_anchors[1][1] - self.mask_anchors[0][1]
+        mask_delta_x = self.mask_anchors[1][0] - self.mask_anchors[0][0]
+        mask_angle_deg = math.degrees(math.atan2(mask_delta_y, mask_delta_x))
+        
+        # Total rotation diff: OpenCV rotates CCW for positive angles. 
+        # If face_angle is positive (tilted right, right eye lower), we want the mask to rotate CW to match.
+        rotation = mask_angle_deg - face_angle_deg
 
-        # Step 3: EMA smoothing on the rendering matrix
+        # 3. Position/Translation based on stable anchor points
+        face_center = face_data.eye_midpoint
+        mask_center = (self.mask_anchors[0] + self.mask_anchors[1]) / 2.0
+
+        # Step 1: Construct transformation matrix: Scale & Rotate around the mask's center 
+        # (This correctly maps MASK -> FRAME)
+        M = cv2.getRotationMatrix2D((float(mask_center[0]), float(mask_center[1])), rotation, scale)
+
+        # Apply translation offsets to map the mask center to the face center
+        M[0, 2] += (face_center[0] - mask_center[0])
+        M[1, 2] += (face_center[1] - mask_center[1])
+
+        # Step 2: EMA smoothing on the rendering matrix
         if self._smoothed_M is None:
             self._smoothed_M = M.copy()
         else:
