@@ -36,33 +36,41 @@ class FaceIncogTrack(VideoStreamTrack):
         self.parser = None
         self.renderer = None
 
+    def process_frame(self, img):
+        if self.parser is None:
+            from processing.parser import LandmarkParser
+            from rendering.overlay import OverlayRenderer
+            self.parser = LandmarkParser(img.shape[1], img.shape[0])
+            self.renderer = OverlayRenderer(draw_mode=self.config.draw_mode)
+
+        # FaceIncog Pipeline
+        raw_landmarks = self.detector.detect(img)
+        face_data_list = self.parser.parse_all(raw_landmarks)
+        out = self.renderer.draw(img, face_data_list, self.registry.active_mask)
+        return out
+
     async def recv(self):
         # Retrieve incoming frame from the browser
         frame = await self.track.recv()
 
-        # Convert to OpenCV compatible BGR numpy array
-        img = frame.to_ndarray(format="bgr24")
+        try:
+            # Convert to OpenCV compatible BGR numpy array
+            img = frame.to_ndarray(format="bgr24")
 
-        if self.parser is None:
-            self.parser = LandmarkParser(img.shape[1], img.shape[0])
-            self.renderer = OverlayRenderer(draw_mode=self.config.draw_mode)
+            # Offload heavy AI processing to a separate thread 
+            # so we don't freeze the aiortc event loop
+            out = await asyncio.to_thread(self.process_frame, img)
 
-        # FaceIncog Pipeline:
-        # 1. Detect facial landmarks
-        raw_landmarks = self.detector.detect(img)
-        
-        # 2. Parse features
-        face_data_list = self.parser.parse_all(raw_landmarks)
-        
-        # 3. Apply active mask and draw
-        out = self.renderer.draw(img, face_data_list, self.registry.active_mask)
+            # Re-encode frame for WebRTC transmission
+            new_frame = VideoFrame.from_ndarray(out, format="bgr24")
+            new_frame.pts = frame.pts
+            new_frame.time_base = frame.time_base
+            return new_frame
 
-        # Re-encode frame for WebRTC transmission
-        new_frame = VideoFrame.from_ndarray(out, format="bgr24")
-        new_frame.pts = frame.pts
-        new_frame.time_base = frame.time_base
-        
-        return new_frame
+        except Exception as e:
+            print(f"[FaceIncogTrack] Error processing frame: {e}")
+            # If it fails, just return the exact same frame we got so it doesn't freeze
+            return frame
 
 
 async def index(request):
@@ -162,6 +170,7 @@ def prepare_faceincog(app, args):
     print("[FaceIncog] Loading Face Detector...")
     detector = FaceDetector(config.max_faces, config.min_detection_confidence,
                             config.min_tracking_confidence, config.refine_landmarks)
+    detector.open()
     
     print(f"[FaceIncog] Loading Masks from {config.masks_dir}...")
     registry = MaskRegistry(masks_dir=config.masks_dir, smooth_alpha=config.mask_smooth_alpha)
