@@ -50,7 +50,7 @@ else:
 # This caches the buffalo_l.zip → ~/.insightface/models/buffalo_l/ inside
 # the container image so it never needs to re-download on boot.
 print("Initialising InsightFace buffalo_l (auto-downloads if needed)...")
-import insightface
+import insightface  # noqa: E402
 
 app = insightface.app.FaceAnalysis(name="buffalo_l")
 app.prepare(ctx_id=0, det_size=(640, 640))

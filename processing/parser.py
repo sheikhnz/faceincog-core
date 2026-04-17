@@ -158,8 +158,6 @@ class LandmarkParser:
     # ── Internal ───────────────────────────────────────────────────────────────
 
     def _parse_one(self, lms: Any) -> FaceData:
-        n = len(lms)
-
         # Build pixel-space (N, 2) array
         pts = np.array(
             [(lm.x * self.frame_width, lm.y * self.frame_height) for lm in lms],

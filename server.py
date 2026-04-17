@@ -99,7 +99,7 @@ async def offer(request):
     offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
 
     pc = RTCPeerConnection()
-    pc_id = "PeerConnection(%s)" % id(pc)
+    pc_id = f"PeerConnection({id(pc)})"
     print(f"[{pc_id}] Created")
 
     # Keep track of PCs to close them cleanly later

@@ -8,10 +8,10 @@ All tuneable parameters live here — import Config and pass it around.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class DrawMode(str, Enum):
+class DrawMode(StrEnum):
     """Controls what the OverlayRenderer draws on each frame."""
 
     POINTS = "POINTS"  # Landmark dots only
