@@ -52,7 +52,10 @@ class InsightFaceMask(BaseMask):
         # 1. FaceAnalyzer (to extract features from target & webcam face)
         # 2. INSwapper (to actually run the pixel switch)
         
-        self.app = insightface.app.FaceAnalysis(name='buffalo_l')
+        # Enable Apple Silicon Hardware Acceleration (CoreML)
+        providers = ["CoreMLExecutionProvider", "CPUExecutionProvider"]
+        
+        self.app = insightface.app.FaceAnalysis(name='buffalo_l', providers=providers)
         self.app.prepare(ctx_id=0, det_size=(640, 640))
         
         swapper_path = "assets/models/inswapper_128.onnx"
@@ -60,6 +63,7 @@ class InsightFaceMask(BaseMask):
             raise FileNotFoundError(f"Model not found at {swapper_path}. Please run scripts/download_models.py")
             
         self.swapper = insightface.model_zoo.get_model(swapper_path, download=False, download_zip=False)
+        self.swapper.providers = providers
         
         # Load and extract embedding of target face once at init
         self._target_face = self._load_target_face(target_image_path)
