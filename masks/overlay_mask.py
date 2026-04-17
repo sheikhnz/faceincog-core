@@ -60,7 +60,7 @@ class Overlay2DMask(BaseMask):
     # ── Factory ────────────────────────────────────────────────────────────────
 
     @classmethod
-    def from_directory(cls, mask_dir: str, smooth_alpha: float = 0.7) -> "Overlay2DMask":
+    def from_directory(cls, mask_dir: str, smooth_alpha: float = 0.5) -> "Overlay2DMask":
         """Load an Overlay2DMask from a mask asset directory containing mask.json."""
         config_path = os.path.join(mask_dir, "mask.json")
         with open(config_path) as f:
@@ -68,11 +68,28 @@ class Overlay2DMask(BaseMask):
 
         texture_path = os.path.join(mask_dir, cfg["texture"])
         anchors = cfg["anchors"]
+
+        # Support both pixel-space and normalised [0..1] anchor coordinates.
+        # Normalised anchors are resolution-independent and preferred for new assets.
+        if cfg.get("anchor_space") == "normalised":
+            from PIL import Image as _Image
+            with _Image.open(texture_path) as _img:
+                tex_w, tex_h = _img.size
+            def _to_px(pt: list) -> tuple:
+                return (pt[0] * tex_w, pt[1] * tex_h)
+            left_eye_anchor  = _to_px(anchors["left_eye"])
+            right_eye_anchor = _to_px(anchors["right_eye"])
+            nose_tip_anchor  = _to_px(anchors["nose_tip"])
+        else:
+            left_eye_anchor  = tuple(anchors["left_eye"])
+            right_eye_anchor = tuple(anchors["right_eye"])
+            nose_tip_anchor  = tuple(anchors["nose_tip"])
+
         return cls(
             texture_path=texture_path,
-            left_eye_anchor=tuple(anchors["left_eye"]),
-            right_eye_anchor=tuple(anchors["right_eye"]),
-            nose_tip_anchor=tuple(anchors["nose_tip"]),
+            left_eye_anchor=left_eye_anchor,
+            right_eye_anchor=right_eye_anchor,
+            nose_tip_anchor=nose_tip_anchor,
             smooth_alpha=smooth_alpha,
         )
 
@@ -81,10 +98,11 @@ class Overlay2DMask(BaseMask):
     def apply(self, frame: np.ndarray, face_data: FaceData) -> np.ndarray:
         h, w = frame.shape[:2]
 
-        # Get smoothed affine matrix: mask-space → frame-space
+        # Compute smoothed affine matrix: mask texture-space → frame pixel-space.
+        # (The aligner already inverts the transform so warpAffine samples correctly.)
         M = self._aligner.compute(face_data)
 
-        # Warp texture and alpha into frame space
+        # Warp texture and alpha channel into frame space
         warped_bgr = cv2.warpAffine(
             self._texture_bgr, M, (w, h),
             flags=cv2.INTER_LINEAR,
@@ -98,7 +116,12 @@ class Overlay2DMask(BaseMask):
             borderValue=0,
         )
 
-        # Alpha composite: out = alpha*mask + (1-alpha)*frame
+        # Guard: if the warp landed entirely outside the frame (e.g. extreme head
+        # turn) skip compositing to avoid a momentary black frame.
+        if warped_alpha.max() < 1e-3:
+            return frame
+
+        # Alpha composite: out = α·mask + (1−α)·frame
         a = warped_alpha[..., np.newaxis]          # (H, W, 1) float32 in [0,1]
         out = (a * warped_bgr.astype(np.float32) +
                (1.0 - a) * frame.astype(np.float32))

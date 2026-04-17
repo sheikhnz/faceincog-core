@@ -58,10 +58,10 @@ python main.py --help
 
 ### Keyboard shortcuts (runtime)
 
-| Key | Action |
-|-----|--------|
-| `q` | Quit |
-| `m` | Cycle to next mask (or deactivate) |
+| Key | Action                                                |
+| --- | ----------------------------------------------------- |
+| `q` | Quit                                                  |
+| `m` | Cycle to next mask (or deactivate)                    |
 | `d` | Cycle draw mode (POINTS → MESH → MINIMAL → MASK_ONLY) |
 
 ---
@@ -126,25 +126,25 @@ WebcamCapture.read()
 
 ### Key design decisions
 
-| Decision | Rationale |
-|---|---|
-| Single-threaded loop | Simplest baseline; MediaPipe tracking mode is fast enough at 640×480 |
-| `static_image_mode=False` | Enables temporal tracking — faster than per-frame detection |
-| EMA on affine matrix | Suppresses landmark jitter without smoothing lag |
-| `BaseMask` interface | Makes renderer completely mask-agnostic; masks are hot-swappable |
-| `mask.json` descriptor | Assets are self-describing; no code needed to add new masks |
+| Decision                  | Rationale                                                            |
+| ------------------------- | -------------------------------------------------------------------- |
+| Single-threaded loop      | Simplest baseline; MediaPipe tracking mode is fast enough at 640×480 |
+| `static_image_mode=False` | Enables temporal tracking — faster than per-frame detection          |
+| EMA on affine matrix      | Suppresses landmark jitter without smoothing lag                     |
+| `BaseMask` interface      | Makes renderer completely mask-agnostic; masks are hot-swappable     |
+| `mask.json` descriptor    | Assets are self-describing; no code needed to add new masks          |
 
 ---
 
 ## Performance Considerations
 
-| Factor | Impact | Mitigation |
-|---|---|---|
-| Resolution | Higher → more landmark data | Default 640×480 is the sweet spot |
-| Affine warp | O(pixels) via native C++ | Negligible at 640×480 |
-| Alpha blend | Vectorised float32 numpy | Texture converted to float32 once at load |
-| MediaPipe threading | Runs single-threaded | Keep `max_faces=1` unless needed |
-| Mask switch | One-frame delay | No lock needed in single-threaded model |
+| Factor              | Impact                      | Mitigation                                |
+| ------------------- | --------------------------- | ----------------------------------------- |
+| Resolution          | Higher → more landmark data | Default 640×480 is the sweet spot         |
+| Affine warp         | O(pixels) via native C++    | Negligible at 640×480                     |
+| Alpha blend         | Vectorised float32 numpy    | Texture converted to float32 once at load |
+| MediaPipe threading | Runs single-threaded        | Keep `max_faces=1` unless needed          |
+| Mask switch         | One-frame delay             | No lock needed in single-threaded model   |
 
 Typical performance on a modern CPU: **25–35 fps** at 640×480 with MESH draw mode + 2D overlay mask.
 
@@ -153,14 +153,18 @@ Typical performance on a modern CPU: **25–35 fps** at 640×480 with MESH draw 
 ## Extending the Pipeline
 
 ### Add async capture (reduce I/O blocking)
+
 Add a `threading.Thread` producer that fills a `queue.Queue(maxsize=1)` — the main loop reads from the queue instead of calling `cap.read()` directly.
 
 ### Add virtual camera output (OBS)
+
 ```bash
 pip install pyvirtualcam
 # Linux: sudo modprobe v4l2loopback
 ```
+
 Add after `cv2.imshow()`:
+
 ```python
 import pyvirtualcam
 with pyvirtualcam.Camera(width=640, height=480, fps=30) as vcam:
@@ -168,27 +172,23 @@ with pyvirtualcam.Camera(width=640, height=480, fps=30) as vcam:
 ```
 
 ### Add 3D blendshape rendering
+
 Replace the stub in `BlendshapeMask.apply()` with a `pyrender` / `trimesh` offscreen render pass.
 
 ### Add custom ML model
+
 Add a new module under `processing/` that accepts a `FaceData` and returns enriched data. Hot-swap it into the pipeline loop in `runner.py`.
 
 ---
 
 ## Dependencies
 
-| Package | Version | Purpose |
-|---|---|---|
-| `opencv-python` | ≥4.9 | Capture, frame ops, drawing |
-| `mediapipe` | ≥0.10 | FaceMesh landmark detection |
-| `numpy` | ≥1.26 | Array math |
-| `Pillow` | ≥10.2 | RGBA texture loading |
-| `pygltflib` | *(optional)* | GLTF/GLB parsing for blendshape masks |
-| `pyvirtualcam` | *(optional)* | OBS virtual camera output |
-| `torch` | *(optional)* | Custom ML model integration |
-
----
-
-## License
-
-MIT
+| Package         | Version      | Purpose                               |
+| --------------- | ------------ | ------------------------------------- |
+| `opencv-python` | ≥4.9         | Capture, frame ops, drawing           |
+| `mediapipe`     | ≥0.10        | FaceMesh landmark detection           |
+| `numpy`         | ≥1.26        | Array math                            |
+| `Pillow`        | ≥10.2        | RGBA texture loading                  |
+| `pygltflib`     | _(optional)_ | GLTF/GLB parsing for blendshape masks |
+| `pyvirtualcam`  | _(optional)_ | OBS virtual camera output             |
+| `torch`         | _(optional)_ | Custom ML model integration           |
