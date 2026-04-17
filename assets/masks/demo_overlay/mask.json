@@ -1,0 +1,12 @@
+{
+  "type": "overlay_2d",
+  "name": "Demo Overlay",
+  "description": "A simple semi-transparent coloured overlay for testing mask alignment.",
+  "texture": "texture.png",
+  "anchors": {
+    "left_eye":  [96,  108],
+    "right_eye": [224, 108],
+    "nose_tip":  [160, 180]
+  },
+  "blend_mode": "alpha"
+}

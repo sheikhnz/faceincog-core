@@ -1,0 +1,19 @@
+# FaceIncog Core — Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core pipeline
+opencv-python>=4.9.0
+mediapipe>=0.10.0
+numpy>=1.26.0
+
+# Mask system (2D overlays)
+Pillow>=10.2.0
+
+# Optional: 3D blendshape mask stub (GLTF/GLB parsing)
+# pygltflib>=1.16.0
+
+# Optional: virtual camera output (requires v4l2loopback on Linux)
+# pyvirtualcam>=0.10.0
+
+# Optional: custom ML model integration
+# torch>=2.2.0
