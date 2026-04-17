@@ -1,0 +1,57 @@
+name: "\U0001F680 Feature Request"
+description: Suggest a new feature or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Got an idea? Great — describe it below. Before opening, check [existing issues](../../issues) to avoid duplicates.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the limitation or pain point you're running into.
+      placeholder: "e.g. There's no way to hot-swap masks without restarting the server"
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe how you'd like it to work.
+      placeholder: "e.g. Add a REST endpoint `POST /mask` that accepts a mask name and calls registry.activate()"
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any other approaches you've thought of or tried?
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area does this touch?
+      multiple: true
+      options:
+        - Performance
+        - Hardware support (CUDA / CoreML / ROCm)
+        - Mask system / new mask types
+        - WebRTC / networking
+        - Desktop mode (OpenCV)
+        - Docker / deployment
+        - Developer experience / CLI
+        - Tests
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, links, code snippets — anything that helps explain the idea.

@@ -1,0 +1,28 @@
+name: "\U0001F4AC Question"
+description: Ask a question about setup, usage, or how something works
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the [README](../../blob/main/README.md) and [existing issues](../../issues) first — your question may already be answered!
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      placeholder: "e.g. How do I add a custom target face and run it in WebRTC mode?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you already tried?
+      placeholder: "e.g. I followed the README steps but the mask doesn't activate..."
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "e.g. macOS 15.3 (Apple M4)"

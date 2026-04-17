@@ -4,6 +4,23 @@
 
 ---
 
+## Table of Contents
+
+- [What This Is](#what-this-is)
+- [How It Works](#how-it-works)
+- [Quick Start](#quick-start)
+- [Running the App](#running-the-app)
+  - [Option A — Desktop Mode](#option-a--desktop-mode-opencv-window)
+  - [Option B — WebRTC Server Mode](#option-b--webrtc-server-mode-browser)
+- [Project Structure](#project-structure)
+- [Adding a Custom Target Face](#adding-a-custom-target-face)
+- [Docker Deployment](#docker-deployment-cloud-gpu)
+- [Performance](#performance)
+- [Dependencies](#dependencies)
+- [Known Issues](#known-issues)
+
+---
+
 ## What This Is
 
 FaceIncog Core is a real-time deepfake engine that can swap a target person's face onto your live webcam feed. It works **entirely locally on your machine** (no cloud required for local use) or can be containerized and deployed to a GPU cloud server for 30 FPS performance.

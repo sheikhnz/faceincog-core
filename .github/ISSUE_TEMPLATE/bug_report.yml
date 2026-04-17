@@ -1,0 +1,85 @@
+name: "\U0001F41B Bug Report"
+description: Something is broken or not working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill in as much detail as you can.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of what the bug is.
+      placeholder: "e.g. The server crashes on startup when --mask is not specified"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Exact steps to reproduce the issue.
+      placeholder: |
+        1. Run `python server.py --mask demo_deepfake`
+        2. Open http://localhost:8080
+        3. Click "Start Camera & Connect"
+        4. See the error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      placeholder: "e.g. The deepfaked stream should appear in the right video box"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error output / logs
+      description: Paste any relevant terminal output or error messages here.
+      render: shell
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Which mode are you using?
+      options:
+        - Desktop mode (main.py / OpenCV window)
+        - WebRTC server mode (server.py / browser)
+        - Docker
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "e.g. macOS 15.3 (Apple M4), Ubuntu 22.04"
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "e.g. 3.12.2"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: hardware
+    attributes:
+      label: Hardware / inference provider
+      options:
+        - CPU (no GPU)
+        - Apple Silicon (CoreML)
+        - Nvidia GPU (CUDA)
+        - Unknown
+    validations:
+      required: true
