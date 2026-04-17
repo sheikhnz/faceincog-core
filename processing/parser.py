@@ -113,10 +113,15 @@ class LandmarkParser:
             dtype=np.float32,
         )
 
-        # Key points — fall back to non-iris indices if refine_landmarks disabled
+        # Key points — robust average over the eye sockets to handle missing iris data safely
         nose_tip = pts[_NOSE_TIP_INDEX]
-        left_eye = pts[_LEFT_EYE_CENTRE_INDEX] if n > _LEFT_EYE_CENTRE_INDEX else pts[33]
-        right_eye = pts[_RIGHT_EYE_CENTRE_INDEX] if n > _RIGHT_EYE_CENTRE_INDEX else pts[263]
+        
+        left_eye_pts = pts[[33, 133, 159, 145]]
+        right_eye_pts = pts[[362, 263, 386, 374]]
+        
+        left_eye = np.mean(left_eye_pts, axis=0)
+        right_eye = np.mean(right_eye_pts, axis=0)
+        
         upper_lip = pts[_MOUTH_UPPER_INDEX]
         lower_lip = pts[_MOUTH_LOWER_INDEX]
         mouth_centre = (upper_lip + lower_lip) / 2.0
