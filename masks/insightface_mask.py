@@ -62,8 +62,12 @@ class InsightFaceMask(BaseMask):
         if not os.path.exists(swapper_path):
             raise FileNotFoundError(f"Model not found at {swapper_path}. Please run scripts/download_models.py")
             
-        self.swapper = insightface.model_zoo.get_model(swapper_path, download=False, download_zip=False)
-        self.swapper.providers = providers
+        self.swapper = insightface.model_zoo.get_model(
+            swapper_path, 
+            download=False, 
+            download_zip=False,
+            providers=["CPUExecutionProvider"]
+        )
         
         # Load and extract embedding of target face once at init
         self._target_face = self._load_target_face(target_image_path)

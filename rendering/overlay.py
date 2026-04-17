@@ -69,6 +69,8 @@ class OverlayRenderer:
             try:
                 out = active_mask.apply(out, face_data_list[0])
             except Exception as e:
+                # Print the error to terminal so we can debug why the deepfake is failing
+                print(f"[FaceIncog] Mask error during apply: {e}")
                 # Mask errors must never crash the pipeline
                 cv2.putText(out, f"[mask error] {e}", (10, 90),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 1)
