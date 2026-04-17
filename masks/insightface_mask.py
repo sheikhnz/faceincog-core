@@ -26,8 +26,10 @@ from processing.parser import FaceData
 # Fallback block to avoid immediate crashes if pipeline boots without dependencies
 try:
     import insightface
+    from insightface.app.common import Face  # type: ignore[import-untyped]
 except ImportError:
     insightface = None
+    Face = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -92,21 +94,23 @@ class InsightFaceMask(BaseMask):
     # ── BaseMask ───────────────────────────────────────────────────────────────
 
     def apply(self, frame: np.ndarray, face_data: FaceData) -> np.ndarray:
-        # InsightFace detects faces independently, we could use our MediaPipe bbox
-        # but inswapper strictly wants an insightface Face object.
-        # Doing full detection per-frame is slow.
+        # Dynamically inject the lightning-fast MediaPipe geometric data into a mocked
+        # InsightFace object to completely bypass the heavy buffalo_l neural detection!
         
-        # We run the analyzer on the frame to find the user's face
-        # By setting det_size low, it can run faster but might still bottleneck
-        faces = self.app.get(frame)
+        x, y, w, h = face_data.face_rect
+        bbox = np.array([x, y, x + w, y + h], dtype=np.float32)
         
-        if not faces:
-            # If no face found by insightface, return unaltered frame
-            return frame
-            
-        # Get the largest face
-        user_face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0]) * (f.bbox[3]-f.bbox[1]))
+        # INSwapper explicitly expects these 5 affine points
+        kps = np.array([
+            face_data.left_eye,
+            face_data.right_eye,
+            face_data.nose_tip,
+            face_data.mouth_left,
+            face_data.mouth_right
+        ], dtype=np.float32)
+
+        user_face = Face(bbox=bbox, kps=kps)
         
-        # Execute the swap!
+        # Execute the generative swap!
         out = self.swapper.get(frame, user_face, self._target_face, paste_back=True)
         return out

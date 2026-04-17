@@ -59,7 +59,8 @@ class FaceData:
     nose_tip: np.ndarray                      # (2,)
     left_eye: np.ndarray                      # (2,)
     right_eye: np.ndarray                     # (2,)
-    mouth_centre: np.ndarray                  # (2,)
+    mouth_left: np.ndarray                    # (2,)
+    mouth_right: np.ndarray                   # (2,)
     face_rect: tuple[int, int, int, int]      # x, y, w, h
     expressions: dict[str, float] = field(default_factory=dict)
 
@@ -124,7 +125,10 @@ class LandmarkParser:
         
         upper_lip = pts[_MOUTH_UPPER_INDEX]
         lower_lip = pts[_MOUTH_LOWER_INDEX]
-        mouth_centre = (upper_lip + lower_lip) / 2.0
+        
+        # Exact mouth corners used by InsightFace
+        mouth_left = pts[61]
+        mouth_right = pts[291]
 
         # Bounding box from face oval
         oval_pts = pts[_FACE_OVAL_INDICES]
@@ -142,7 +146,8 @@ class LandmarkParser:
             nose_tip=nose_tip,
             left_eye=left_eye,
             right_eye=right_eye,
-            mouth_centre=mouth_centre,
+            mouth_left=mouth_left,
+            mouth_right=mouth_right,
             face_rect=face_rect,
             expressions=expressions,
         )

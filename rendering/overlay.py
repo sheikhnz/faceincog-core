@@ -141,7 +141,8 @@ class OverlayRenderer:
         cv2.circle(frame, tuple(face.nose_tip.astype(int)), 5, _COLOUR_NOSE, -1)
         cv2.circle(frame, tuple(face.left_eye.astype(int)), 4, _COLOUR_EYE, -1)
         cv2.circle(frame, tuple(face.right_eye.astype(int)), 4, _COLOUR_EYE, -1)
-        cv2.circle(frame, tuple(face.mouth_centre.astype(int)), 4, _COLOUR_MOUTH, -1)
+        cv2.circle(frame, tuple(face.mouth_left.astype(int)), 4, _COLOUR_MOUTH, -1)
+        cv2.circle(frame, tuple(face.mouth_right.astype(int)), 4, _COLOUR_MOUTH, -1)
 
     def _draw_bbox(self, frame: np.ndarray, face: FaceData) -> None:
         x, y, bw, bh = face.face_rect
