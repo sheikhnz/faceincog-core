@@ -16,7 +16,7 @@ import math
 from dataclasses import dataclass, field
 
 import numpy as np
-from mediapipe.framework.formats.landmark_pb2 import NormalizedLandmarkList
+from typing import Any
 
 
 # ── MediaPipe landmark indices (FaceMesh 468 / 478 with iris) ─────────────────
@@ -98,14 +98,13 @@ class LandmarkParser:
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
-    def parse_all(self, raw_lists: list[NormalizedLandmarkList]) -> list[FaceData]:
+    def parse_all(self, raw_lists: list[Any]) -> list[FaceData]:
         """Parse every detected face into a FaceData."""
         return [self._parse_one(lm_list) for lm_list in raw_lists]
 
     # ── Internal ───────────────────────────────────────────────────────────────
 
-    def _parse_one(self, lm_list: NormalizedLandmarkList) -> FaceData:
-        lms = lm_list.landmark
+    def _parse_one(self, lms: Any) -> FaceData:
         n = len(lms)
 
         # Build pixel-space (N, 2) array

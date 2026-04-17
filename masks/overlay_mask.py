@@ -116,12 +116,13 @@ class Overlay2DMask(BaseMask):
 
         Returns
         -------
-        bgr : np.ndarray  (H, W, 3) float32 in [0, 1]
+        bgr : np.ndarray  (H, W, 3) float32 in [0, 255]
         alpha : np.ndarray  (H, W) float32 in [0, 1]
         """
         img = Image.open(path).convert("RGBA")
-        arr = np.array(img, dtype=np.float32) / 255.0   # (H, W, 4) normalised
+        arr = np.array(img, dtype=np.float32)
         rgb = arr[..., :3]
-        alpha = arr[..., 3]
+        alpha = arr[..., 3] / 255.0
         bgr = rgb[..., ::-1].copy()                      # RGB → BGR for OpenCV
         return bgr, alpha
+

@@ -20,11 +20,6 @@ from config import DrawMode
 from processing.parser import FaceData
 from masks.base import BaseMask
 
-# MediaPipe drawing utilities
-_mp_drawing = mp.solutions.drawing_utils
-_mp_drawing_styles = mp.solutions.drawing_styles
-_mp_face_mesh = mp.solutions.face_mesh
-
 # Colour constants (BGR)
 _COLOUR_POINT = (0, 220, 120)      # Teal-green landmark dots
 _COLOUR_BBOX = (80, 180, 255)      # Orange bounding box
@@ -103,31 +98,25 @@ class OverlayRenderer:
         self._draw_expression_text(frame, face)
 
     def _draw_mesh(self, frame: np.ndarray, face: FaceData, w: int, h: int) -> None:
-        """Draw full FaceMesh tessellation using MediaPipe's drawing utils."""
-        from mediapipe.framework.formats import landmark_pb2
+        """Draw full FaceMesh tessellation manually."""
+        from mediapipe.tasks.python.vision.face_landmarker import FaceLandmarksConnections
 
-        # Rebuild a NormalizedLandmarkList from pixel-space pts for MP drawing utils
-        lm_list = landmark_pb2.NormalizedLandmarkList()
-        for pt in face.landmarks:
-            lm = lm_list.landmark.add()
-            lm.x = float(pt[0]) / w
-            lm.y = float(pt[1]) / h
-            lm.z = 0.0
+        pts = face.landmarks.astype(np.int32)
+        n_pts = len(pts)
 
-        _mp_drawing.draw_landmarks(
-            image=frame,
-            landmark_list=lm_list,
-            connections=_mp_face_mesh.FACEMESH_TESSELATION,
-            landmark_drawing_spec=None,
-            connection_drawing_spec=_mp_drawing_styles.get_default_face_mesh_tesselation_style(),
-        )
-        _mp_drawing.draw_landmarks(
-            image=frame,
-            landmark_list=lm_list,
-            connections=_mp_face_mesh.FACEMESH_CONTOURS,
-            landmark_drawing_spec=None,
-            connection_drawing_spec=_mp_drawing_styles.get_default_face_mesh_contours_style(),
-        )
+        # Draw tessellation (thin light green)
+        for connection in FaceLandmarksConnections.FACE_LANDMARKS_TESSELATION:
+            if connection.start < n_pts and connection.end < n_pts:
+                pt1 = tuple(pts[connection.start])
+                pt2 = tuple(pts[connection.end])
+                cv2.line(frame, pt1, pt2, (0, 150, 0), 1)
+
+        # Draw contours (white thick)
+        for connection in FaceLandmarksConnections.FACE_LANDMARKS_CONTOURS:
+            if connection.start < n_pts and connection.end < n_pts:
+                pt1 = tuple(pts[connection.start])
+                pt2 = tuple(pts[connection.end])
+                cv2.line(frame, pt1, pt2, (255, 255, 255), 1)
 
     def _draw_minimal(self, frame: np.ndarray, face: FaceData) -> None:
         """Draw only eye, nose, mouth landmark dots."""
