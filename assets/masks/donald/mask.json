@@ -1,0 +1,6 @@
+{
+  "type": "insightface",
+  "name": "Donald",
+  "description": "AI face swap that replaces your face with target.png",
+  "target_image": "target.png"
+}
